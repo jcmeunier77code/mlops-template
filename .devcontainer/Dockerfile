@@ -1,29 +1,28 @@
-# See here for image contents: https://github.com/microsoft/vscode-dev-containers/tree/v0.245.2/containers/codespaces-linux/.devcontainer/base.Dockerfile
-FROM mcr.microsoft.com/vscode/devcontainers/universal:2-focal
+# Base image with Python 3.12 + CUDA + dev tools
+FROM mcr.microsoft.com/devcontainers/python:3.12-cuda
 
-RUN apt-get update && apt-get -y install --no-install-recommends \
-   ffmpeg \ 
-   python3.8-venv \
-   gcc \
-   pciutils
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ffmpeg \
+    gcc \
+    make \
+    pciutils \
+    curl \
+    git \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#install-guide
-RUN distribution=$(. /etc/os-release;echo $ID$VERSION_ID) \
-      && curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \
-      && curl -s -L https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.list | \
-            sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
-            sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+# Optional: Set a working directory
+WORKDIR /workspace
 
-RUN apt-get update \
-&& apt-get install -y nvidia-docker2 \
-&& systemctl restart docker
+# Copy project files
+COPY requirements.txt ./requirements.txt
 
-#create global virtual environment using python standard library tools of virtualenv
-ARG USER="codespace"
-ARG VENV_PATH="/home/${USER}/venv"
-COPY requirements.txt /tmp/
-COPY Makefile /tmp/
-RUN su $USER -c "/usr/bin/python3 -m venv /home/${USER}/venv" \
-   && su $USER -c "${VENV_PATH}/bin/pip --disable-pip-version-check --no-cache-dir install -r /tmp/requirements.txt" \
-   && rm -rf /tmp/requirements.txt 
+# Install Python dependencies globally
+RUN pip install --upgrade pip && pip install -r requirements.txt
 
+# Optional: install whisper (editable install)
+RUN pip install git+https://github.com/openai/whisper.git
+
+# Optional: Add a non-root user (only if needed)
+# RUN useradd -m -s /bin/bash devuser
+# USER devuser
