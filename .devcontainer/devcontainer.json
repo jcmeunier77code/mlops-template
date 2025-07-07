@@ -1,8 +1,10 @@
 {
-  "name": "MLOps Codespace (Python 3.12 + CUDA)",
+  "name": "MLOps Codespace (Python 3.12)",
 
-  // Use a prebuilt CUDA image with Python 3.12
-  "image": "mcr.microsoft.com/devcontainers/python:3.12-cuda",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
 
   "features": {
     "ghcr.io/devcontainers/features/nvidia-cuda:1": {
@@ -33,24 +35,8 @@
   },
 
   "overrideCommand": false,
+  // Do NOT include a remoteUser unless you add one in Dockerfile
+  // "remoteUser": "codespace", ← REMOVE this
 
-  // Important: Don't hardcode remoteUser
-  // This avoids "no matching entries in passwd file"
-  // and lets devcontainers auto-configure the user
-  // "remoteUser": "codespace", ← REMOVE THIS LINE
-
-  "mounts": [
-    "source=codespaces-linux-var-lib-docker,target=/var/lib/docker,type=volume"
-  ],
-
-  "runArgs": [
-    "--cap-add=SYS_PTRACE",
-    "--security-opt",
-    "seccomp=unconfined",
-    "--privileged",
-    "--init"
-  ],
-
-  // Safer way to install packages
-  "postCreateCommand": "pip install --upgrade pip && pip install -r requirements.txt"
+  "postCreateCommand": "make setup || pip install -r requirements.txt"
 }
